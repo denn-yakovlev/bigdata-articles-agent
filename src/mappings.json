@@ -1,0 +1,17 @@
+{
+  "mappings": {
+    "properties": {
+      "pub_date": {
+        "type": "date"
+      },
+      "pub_history": {
+        "Received": {
+          "type" : "DATE"
+        },
+        "Accepted": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}

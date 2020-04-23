@@ -9,8 +9,9 @@ def get_page_html_element(url, driver):
     return html.fromstring(driver.page_source)
 
 
-def get_articles_meta(driver, base_url):
+def parse_articles(driver, base_url):
     articles = []
+    #driver.find_element_by_xpath()
     for page in range(1, 7):
         html_element = get_page_html_element(
             f"{base_url}/articles?searchType=journalSearch&sort=PubDate&page={page}",
@@ -39,8 +40,10 @@ def get_articles_meta(driver, base_url):
                             "//time[@itemprop='datePublished']/@datetime"
                         )
                     ),
+                    "pub_history": get_publication_history(html_element),
                     "authors": get_authors_info(html_element),
                     "keywords": html_element.xpath("//ul[@class='c-article-subject-list']/li/span/text()"),
+                    "doi": html_element.find(".//meta[@name='DOI']").get("content"),
                     "text": get_text(html_element),
                     "figures": get_figures_info(html_element)
                 }
@@ -64,6 +67,16 @@ def get_authors_info(html_element):
     return result
 
 
+def get_publication_history(html_element: html.HtmlElement):
+    result = {}
+    items = html_element.findall(
+        ".//ul[@data-test='publication-history']/li[@class='c-bibliographic-information__list-item']"
+    )
+    result["received"] = items[0].find(".//time").get("datetime")
+    result["accepted"] = items[1].find(".//time").get("datetime")
+    return result
+
+
 def get_text(html_element):
     result = {}
     section: html.HtmlElement
@@ -82,8 +95,8 @@ def get_figures_info(html_element):
         src = figure.find(".//picture//img")
         result.append({
             "caption": caption,
-            "img_link": link.get("href") if link != None else None,
-            "picture_src": src.get("src") if src != None else None
+            "img_link": link.get("href") if link is not None else None,
+            "picture_src": src.get("src") if src is not None else None
         })
     return result
 
@@ -91,6 +104,6 @@ def get_figures_info(html_element):
 if __name__ == '__main__':
     base_url = "https://journalofbigdata.springeropen.com"
     with webdriver.Firefox() as driver:
-        articles = get_articles_meta(driver, base_url)
-        with open("articles-info.json", 'w', encoding='utf-8') as f:
+        articles = parse_articles(driver, base_url)
+        with open("src/articles-info.json", 'w', encoding='utf-8') as f:
             json.dump(articles, f, indent=2)
